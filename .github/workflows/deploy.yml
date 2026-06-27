@@ -1,0 +1,52 @@
+name: CI/CD Build & Validate Pipeline
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js v20 runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 1. Build and test Backend Service
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Run Backend Integrations Test
+        run: |
+          cd backend
+          node test-integrations.js
+        env:
+          MONGO_URI: mongodb://127.0.0.1:27017/one_janitorial_test
+          JWT_SECRET: test_jwt_access_secret_key_12345
+          VAULT_ENCRYPTION_KEY: a0f0b0c0d0e0f0102030405060708090
+
+      # 2. Build and lint Frontend Service
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Verify Frontend Production Build
+        run: |
+          cd frontend
+          npm run build

@@ -1,0 +1,165 @@
+/* React Flow Custom Node Base Styles */
+
+.workflow-node-base {
+  background-color: #ffffff;
+  border: 1px solid #77B1D4; /* Secondary Professional Blue border */
+  border-radius: 4px; /* 4px border radius */
+  padding: 2px; /* 2px padding */
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  color: #1E293B;
+  width: 220px;
+  min-height: 48px;
+  box-sizing: border-box;
+  text-align: left;
+  box-shadow: none;
+}
+
+.workflow-node-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #517891; /* Primary Dark Navigation Header */
+  color: #ffffff;
+  padding: 4px 6px;
+  border-radius: 2px 2px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.workflow-node-header.trigger {
+  background-color: #57B9FF; /* Primary Action Blue Trigger */
+}
+
+.workflow-node-header.condition {
+  background-color: #517891;
+  border-bottom: 2px solid #77B1D4;
+}
+
+.workflow-node-header.ai {
+  background-color: #517891; /* Dark nav header for AI Agents */
+  border-bottom: 1.5px solid #57B9FF; /* Action Blue accent line */
+}
+
+.workflow-node-body {
+  padding: 6px 4px;
+  font-size: 11px;
+  color: #64748B;
+  word-break: break-all;
+}
+
+.workflow-node-footer {
+  border-top: 1px solid #77B1D4;
+  padding: 2px 4px;
+  font-size: 9px;
+  color: #64748B;
+  background-color: #F8FAFC;
+}
+
+/* Variable Detect Smart Text Node */
+.smart-text-node-container {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #517891;
+  border-radius: 4px;
+  padding: 2px;
+  width: auto;
+  min-width: 240px;
+  max-width: 480px;
+}
+
+.smart-text-node-textarea {
+  width: 100%;
+  border: 1px solid #77B1D4;
+  border-radius: 2px;
+  font-family: monospace;
+  font-size: 12px;
+  padding: 4px;
+  resize: none;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.smart-text-node-textarea:focus {
+  outline: none;
+  border-color: #57B9FF;
+}
+
+/* React Flow Handles */
+.custom-flow-handle {
+  width: 8px !important;
+  height: 8px !important;
+  background-color: #57B9FF !important; /* Action Blue handles */
+  border: 1px solid #ffffff !important;
+  border-radius: 0% !important; /* Flat square design */
+}
+
+.custom-flow-handle.left {
+  left: -5px !important;
+}
+
+.custom-flow-handle.right {
+  right: -5px !important;
+}
+
+/* Node Selection States */
+.react-flow__node.selected .workflow-node-base {
+  border: 2px solid #57B9FF !important; /* Action Blue outline when selected */
+}
+
+/* Execution Status Highlight Borders */
+.status-running {
+  border: 2px solid #57B9FF !important; /* Action Blue */
+}
+
+.status-completed {
+  border: 2px solid #57B9FF !important; /* Action Blue completed status */
+}
+
+.status-failed {
+  border: 2px solid #ef4444 !important; /* Error Red */
+}
+
+.status-pending {
+  border: 2px solid #77B1D4 !important; /* Secondary metrics blue */
+}
+
+.status-skipped {
+  border: 1px dashed #64748B !important;
+  opacity: 0.5;
+}
+
+/* Utility node container for dragging */
+.node-library-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 6px;
+  background: #ffffff;
+  border: 1px solid #77B1D4;
+  border-radius: 4px;
+  cursor: grab;
+  font-size: 12px;
+  color: #1E293B;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.node-library-item:hover {
+  background: rgba(144, 213, 255, 0.15); /* Hover light sky blue */
+  border-color: #57B9FF;
+}
+
+/* No animation overrides for standard react flow components */
+.react-flow__edge-path {
+  stroke-dasharray: 0 !important;
+  animation: none !important;
+  transition: none !important;
+}
+
+.react-flow__connection-path {
+  stroke: #57B9FF !important;
+  stroke-width: 2px !important;
+}

@@ -1,0 +1,41 @@
+services:
+  # Express Backend Web Service (Double-duties as BullMQ queue dispatcher)
+  - type: web
+    name: one-janitorial-api
+    env: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    rootDir: backend
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        placeholder: "mongodb+srv://user:pass@cluster.mongodb.net/one_janitorial"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: VAULT_ENCRYPTION_KEY
+        placeholder: "32_character_hex_encryption_key_hash"
+      - key: SOCKET_CORS_ORIGIN
+        value: "*"
+
+  # BullMQ Task Queue Dedicated Worker (Optional scale offloader)
+  - type: worker
+    name: one-janitorial-queue-worker
+    env: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: node src/server.js
+    rootDir: backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        placeholder: "mongodb+srv://user:pass@cluster.mongodb.net/one_janitorial"
+      - key: VAULT_ENCRYPTION_KEY
+        placeholder: "32_character_hex_encryption_key_hash"
