@@ -29,9 +29,10 @@ import FailureRecovery from '../models/FailureRecovery.js';
 export const seedDatabase = async () => {
   try {
     const adminExists = await User.findOne({ email: 'admin@onejanitorial.com' });
+    const localAdminExists = await User.findOne({ email: 'admin@localhost' });
     const sopCount = await SOPDocument.countDocuments();
     const syncCount = await SyncHistory.countDocuments();
-    if (adminExists && sopCount > 0 && syncCount > 0) {
+    if (adminExists && localAdminExists && sopCount > 0 && syncCount > 0) {
       logger.info('Database already seeded with mock data. Skipping seeder.');
       return;
     }
@@ -47,6 +48,7 @@ export const seedDatabase = async () => {
     const seedUsers = [
       { email: 'superadmin@onejanitorial.com', role: 'Super Admin', firstName: 'Sarah', lastName: 'Jenkins', dept: 'Administration' },
       { email: 'admin@onejanitorial.com', role: 'Admin', firstName: 'Kiran', lastName: 'Kumar', dept: 'Administration' },
+      { email: 'admin@localhost', password: 'Admin@12345', role: 'Admin', firstName: 'admin', lastName: 'local', dept: 'Administration' },
       { email: 'manager@onejanitorial.com', role: 'Manager', firstName: 'Marcus', lastName: 'Vance', dept: 'Administration' },
       { email: 'sales@onejanitorial.com', role: 'Sales', firstName: 'Jessica', lastName: 'Rios', dept: 'Sales' },
       { email: 'bco@onejanitorial.com', role: 'BCO', firstName: 'Derek', lastName: 'Snyder', dept: 'BCO Operations' },
@@ -61,7 +63,7 @@ export const seedDatabase = async () => {
     for (const u of seedUsers) {
       const user = new User({
         email: u.email,
-        password: 'Password123',
+        password: u.password || 'Password123',
         role: u.role
       });
       await user.save();
