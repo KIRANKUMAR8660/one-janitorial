@@ -27,6 +27,7 @@ import AdvancedConsole from './pages/AdvancedConsole.jsx';
 import Analytics from './pages/Analytics.jsx';
 import AnalyticsMonitoring from './pages/AnalyticsMonitoring.jsx';
 import Integrations from './pages/Integrations.jsx';
+import DocumentationCenter from './pages/DocumentationCenter.jsx';
 
 import WorkflowDashboard from './pages/workflows/WorkflowDashboard.jsx';
 import WorkflowBuilder from './pages/WorkflowBuilder.jsx';
@@ -138,6 +139,7 @@ function App() {
           <Route path="/analytics" element={<PrivateLayout><Analytics /></PrivateLayout>} />
           <Route path="/monitoring" element={<PrivateLayout><AnalyticsMonitoring /></PrivateLayout>} />
           <Route path="/integrations" element={<PrivateLayout><Integrations /></PrivateLayout>} />
+          <Route path="/documentation" element={<PrivateLayout><DocumentationCenter /></PrivateLayout>} />
 
           {/* Workflows routes */}
           <Route path="/workflows" element={<PrivateLayout><WorkflowDashboard /></PrivateLayout>} />

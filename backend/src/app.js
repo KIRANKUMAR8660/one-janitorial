@@ -25,6 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static assets (e.g. contracts, uploaded PDFs)
 app.use('/uploads', express.static('uploads'));
+app.use('/documentation-files', express.static('c:/Users/KIRAN KUMAR/Downloads/one__janitorial/documentation'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {

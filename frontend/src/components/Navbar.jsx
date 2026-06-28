@@ -29,6 +29,7 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import KeyIcon from '@mui/icons-material/Key';
 import PowerIcon from '@mui/icons-material/Power';
 import BusinessIcon from '@mui/icons-material/Business';
+import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 
 import { useSelector, useDispatch } from 'react-redux';
 import { logoutThunk, clearNotifications } from '../store/index.js';
@@ -44,6 +45,7 @@ const Navbar = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [quickActionEl, setQuickActionEl] = useState(null);
   const [profileEl, setProfileEl] = useState(null);
+  const [docAnchorEl, setDocAnchorEl] = useState(null);
 
   // Global Search states
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,6 +89,7 @@ const Navbar = () => {
     { label: 'SOP RAG Library', path: '/rag', desc: 'Search manual procedures & instructions' },
     { label: 'Advanced Operations', path: '/advanced', desc: 'Trigger manual test runs' },
     { label: 'Integration Portal', path: '/integrations', desc: 'Sync third-party API credentials' },
+    { label: 'Documentation Portal', path: '/documentation', desc: 'Route explorer, API reference, developer guides, and PDF manuals' },
   ], []);
 
   // Filter searches based on role permissions
@@ -256,6 +259,44 @@ const Navbar = () => {
             <MenuItem onClick={() => { handleCloseQuickActions(); navigate('/tickets'); }} sx={{ fontSize: '0.85rem' }}>Log Client Ticket</MenuItem>
             <MenuItem onClick={() => { handleCloseQuickActions(); navigate('/crm'); }} sx={{ fontSize: '0.85rem' }}>Register HubSpot Lead</MenuItem>
             <MenuItem onClick={() => { handleCloseQuickActions(); navigate('/meetings'); }} sx={{ fontSize: '0.85rem' }}>Schedule Meeting</MenuItem>
+          </Menu>
+
+          {/* Documentation Dropdown */}
+          <Button
+            size="small"
+            variant="contained"
+            onClick={(e) => setDocAnchorEl(e.currentTarget)}
+            startIcon={<AutoStoriesIcon fontSize="small" />}
+            endIcon={<ArrowDropDownIcon fontSize="small" />}
+            sx={{ 
+              height: 32, 
+              borderRadius: '4px', 
+              backgroundColor: '#FF9671', // Salmon pink accent color
+              color: '#FFFFFF', 
+              '&:hover': { backgroundColor: '#e07f59' } 
+            }}
+          >
+            Documentation
+          </Button>
+          <Menu
+            anchorEl={docAnchorEl}
+            open={Boolean(docAnchorEl)}
+            onClose={() => setDocAnchorEl(null)}
+            PaperProps={{ sx: { width: 220, mt: 0.5, border: '1px solid #845EC2', backgroundColor: '#FEFEDF' } }}
+          >
+            <MenuItem onClick={() => { setDocAnchorEl(null); navigate('/documentation?tab=user'); }} sx={{ fontSize: '0.85rem' }}>User Guide</MenuItem>
+            <MenuItem onClick={() => { setDocAnchorEl(null); navigate('/documentation?tab=admin'); }} sx={{ fontSize: '0.85rem' }}>Admin Guide</MenuItem>
+            <MenuItem onClick={() => { setDocAnchorEl(null); navigate('/documentation?tab=dev'); }} sx={{ fontSize: '0.85rem' }}>Developer Guide</MenuItem>
+            <MenuItem onClick={() => { setDocAnchorEl(null); navigate('/documentation?tab=api'); }} sx={{ fontSize: '0.85rem' }}>API Reference</MenuItem>
+            <MenuItem onClick={() => { setDocAnchorEl(null); navigate('/documentation?tab=routes'); }} sx={{ fontSize: '0.85rem' }}>Route Explorer</MenuItem>
+            <MenuItem onClick={() => { setDocAnchorEl(null); navigate('/documentation?tab=components'); }} sx={{ fontSize: '0.85rem' }}>Component Library</MenuItem>
+            <MenuItem onClick={() => { setDocAnchorEl(null); navigate('/documentation?tab=database'); }} sx={{ fontSize: '0.85rem' }}>Database Schema</MenuItem>
+            <MenuItem onClick={() => { setDocAnchorEl(null); navigate('/documentation?tab=workflows'); }} sx={{ fontSize: '0.85rem' }}>Workflow Documentation</MenuItem>
+            <MenuItem onClick={() => { setDocAnchorEl(null); navigate('/documentation?tab=agents'); }} sx={{ fontSize: '0.85rem' }}>AI Agent Documentation</MenuItem>
+            <MenuItem onClick={() => { setDocAnchorEl(null); navigate('/documentation?tab=integrations'); }} sx={{ fontSize: '0.85rem' }}>Integration Guide</MenuItem>
+            <MenuItem onClick={() => { setDocAnchorEl(null); navigate('/documentation?tab=troubleshooting'); }} sx={{ fontSize: '0.85rem' }}>Troubleshooting</MenuItem>
+            <MenuItem onClick={() => { setDocAnchorEl(null); navigate('/documentation?tab=release'); }} sx={{ fontSize: '0.85rem' }}>Release Notes</MenuItem>
+            <MenuItem onClick={() => { setDocAnchorEl(null); navigate('/documentation?tab=dashboard'); }} sx={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#845EC2' }}>PDF Export</MenuItem>
           </Menu>
 
           {/* Notifications Icon and list */}

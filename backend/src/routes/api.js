@@ -96,6 +96,11 @@ const upload = multer({ storage });
 import { protect } from '../middleware/auth.js';
 import { authorize } from '../middleware/rbac.js';
 import { apiLimiter, recoveryLimiter } from '../middleware/rateLimiter.js';
+import {
+  getDocumentationData,
+  generatePDFs,
+  getPDFFiles
+} from '../controllers/documentationController.js';
 
 const router = express.Router();
 
@@ -213,5 +218,10 @@ router.all('/custom-run/:version/:path(*)', handleCustomAPIExecution);
 router.get('/admin/roles', protect, authorize('Super Admin', 'Admin'), getCustomRoles);
 router.post('/admin/roles', protect, authorize('Super Admin', 'Admin'), createCustomRole);
 router.delete('/admin/roles/:id', protect, authorize('Super Admin', 'Admin'), deleteCustomRole);
+
+// 21. Documentation Center
+router.get('/documentation/data', protect, getDocumentationData);
+router.post('/documentation/generate-pdfs', protect, generatePDFs);
+router.get('/documentation/pdf-files', protect, getPDFFiles);
 
 export default router;

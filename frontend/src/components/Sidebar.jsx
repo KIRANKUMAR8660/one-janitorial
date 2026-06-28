@@ -112,6 +112,7 @@ const Sidebar = () => {
   // AI & RAG system
   menuItems.push({ text: 'AI Control Center', path: '/ai', icon: <MemoryIcon fontSize="small" /> });
   menuItems.push({ text: 'SOP RAG Library', path: '/rag', icon: <AutoStoriesIcon fontSize="small" /> });
+  menuItems.push({ text: 'Documentation Portal', path: '/documentation', icon: <AutoStoriesIcon fontSize="small" /> });
 
   // Custom added diagnostics / reports / settings dashboards
   menuItems.push({ text: 'Supabase Health', path: '/supabase-health', icon: <CloudQueueIcon fontSize="small" /> });
