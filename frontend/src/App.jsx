@@ -63,9 +63,9 @@ const PrivateLayout = ({ children }) => {
     return () => window.removeEventListener('sidebar_toggle', handleToggle);
   }, []);
 
-  if (!accessToken) {
-    return <Navigate to="/login" replace />;
-  }
+  // if (!accessToken) {
+  //   return <Navigate to="/login" replace />;
+  // }
 
   const drawerWidth = isCollapsed ? 64 : 240;
 
