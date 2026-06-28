@@ -14,13 +14,13 @@ services:
       - key: NODE_ENV
         value: production
       - key: MONGO_URI
-        placeholder: "mongodb+srv://user:pass@cluster.mongodb.net/one_janitorial"
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
       - key: VAULT_ENCRYPTION_KEY
-        placeholder: "32_character_hex_encryption_key_hash"
+        sync: false
       - key: SOCKET_CORS_ORIGIN
         value: "*"
 
@@ -36,6 +36,6 @@ services:
       - key: NODE_ENV
         value: production
       - key: MONGO_URI
-        placeholder: "mongodb+srv://user:pass@cluster.mongodb.net/one_janitorial"
+        sync: false
       - key: VAULT_ENCRYPTION_KEY
-        placeholder: "32_character_hex_encryption_key_hash"
+        sync: false
