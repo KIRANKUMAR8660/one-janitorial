@@ -4,11 +4,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://one-janitorial-backend.onrender.com/api/:path*"
+      "destination": "https://one-janitorial-api.onrender.com/api/:path*"
     },
     {
       "source": "/socket.io/:path*",
-      "destination": "https://one-janitorial-backend.onrender.com/socket.io/:path*"
+      "destination": "https://one-janitorial-api.onrender.com/socket.io/:path*"
     },
     {
       "source": "/((?!assets/|static/|favicon.ico).*|.*\\.html)",
