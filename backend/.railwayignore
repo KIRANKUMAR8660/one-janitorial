@@ -1,0 +1,11 @@
+node_modules
+backups
+*.log
+temp_emails.log
+.env
+.env.*
+!.env.example
+dist
+coverage
+generate-docs.js
+test-integrations.js

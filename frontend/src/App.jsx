@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { restoreSession } from './store/index.js';
 import { initSocket, disconnectSocket } from './socket.js';
@@ -49,6 +49,29 @@ import Reports from './pages/Reports.jsx';
 import Settings from './pages/Settings.jsx';
 import Profile from './pages/Profile.jsx';
 import SystemReadiness from './pages/SystemReadiness.jsx';
+
+// Route redirection helpers for Meetings
+const MeetingCreateRedirect = () => <Navigate to="/meetings?action=create" replace />;
+const MeetingDetailsRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/meetings?id=${id}`} replace />;
+};
+const MeetingEditRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/meetings?id=${id}&action=edit`} replace />;
+};
+
+// Route redirection helpers for Password Management and Users
+const PasswordManagementRedirect = () => <Navigate to="/admin-password-management" replace />;
+const UserCreateRedirect = () => <Navigate to="/admin-password-management?action=create" replace />;
+const UserDetailsRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/admin-password-management?id=${id}`} replace />;
+};
+const UserEditRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/admin-password-management?id=${id}&action=edit`} replace />;
+};
 
 const PrivateLayout = ({ children }) => {
   const { accessToken } = useSelector(state => state.auth);
@@ -150,6 +173,19 @@ function App() {
           {/* Password Security Profile & Admin controls */}
           <Route path="/change-password" element={<PrivateLayout><ChangePassword /></PrivateLayout>} />
           <Route path="/admin-password-management" element={<PrivateLayout><AdminPasswordManagement /></PrivateLayout>} />
+
+          {/* Meeting Routes */}
+          <Route path="/meetings" element={<PrivateLayout><Meetings /></PrivateLayout>} />
+          <Route path="/meetings/create" element={<PrivateLayout><MeetingCreateRedirect /></PrivateLayout>} />
+          <Route path="/meetings/:id" element={<PrivateLayout><MeetingDetailsRedirect /></PrivateLayout>} />
+          <Route path="/meetings/edit/:id" element={<PrivateLayout><MeetingEditRedirect /></PrivateLayout>} />
+
+          {/* Password Management & Users Redirect Routes */}
+          <Route path="/password-management" element={<PrivateLayout><PasswordManagementRedirect /></PrivateLayout>} />
+          <Route path="/users" element={<PrivateLayout><PasswordManagementRedirect /></PrivateLayout>} />
+          <Route path="/users/create" element={<PrivateLayout><UserCreateRedirect /></PrivateLayout>} />
+          <Route path="/users/:id" element={<PrivateLayout><UserDetailsRedirect /></PrivateLayout>} />
+          <Route path="/users/edit/:id" element={<PrivateLayout><UserEditRedirect /></PrivateLayout>} />
 
           {/* Custom Diagnostics, Reports & Scorecard Routes */}
           <Route path="/hubspot" element={<PrivateLayout><HubSpotDiagnostics /></PrivateLayout>} />

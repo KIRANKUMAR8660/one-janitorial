@@ -66,6 +66,18 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['Enabled', 'Disabled'],
     default: 'Enabled'
+  },
+  forcePasswordReset: {
+    type: Boolean,
+    default: false
+  },
+  lastLogin: {
+    type: Date,
+    default: null
+  },
+  passwordLastChanged: {
+    type: Date,
+    default: Date.now
   }
 }, { timestamps: true });
 

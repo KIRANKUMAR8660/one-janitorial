@@ -20,12 +20,21 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  FormControlLabel,
-  Switch,
   Checkbox,
   FormGroup,
+  FormControlLabel,
   Tabs,
-  Tab
+  Tab,
+  CircularProgress,
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Alert
 } from '@mui/material';
 import axios from 'axios';
 import EnterpriseTable from '../components/EnterpriseTable.jsx';
@@ -34,6 +43,12 @@ import QrCodeIcon from '@mui/icons-material/QrCode';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import SecurityIcon from '@mui/icons-material/Security';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+
+const getAuthHeaders = (token) => {
+  return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+};
 
 const AdminPasswordManagement = () => {
   const [tabIndex, setTabIndex] = useState(0);
@@ -59,6 +74,25 @@ const AdminPasswordManagement = () => {
   const [newDept, setNewDept] = useState('Operations');
   const [newFirstName, setNewFirstName] = useState('');
   const [newLastName, setNewLastName] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [newEmployeeId, setNewEmployeeId] = useState('');
+
+  // Edit User states
+  const [openEditUser, setOpenEditUser] = useState(false);
+  const [editEmail, setEditEmail] = useState('');
+  const [editRole, setEditRole] = useState('');
+  const [editDept, setEditDept] = useState('');
+  const [editFirstName, setEditFirstName] = useState('');
+  const [editLastName, setEditLastName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editEmployeeId, setEditEmployeeId] = useState('');
+  const [editStatus, setEditStatus] = useState('Enabled');
+
+  // Reset Password Dialog states
+  const [openResetDialog, setOpenResetDialog] = useState(false);
+  const [tempPassword, setTempPassword] = useState('');
+  const [forceResetToggle, setForceResetToggle] = useState(false);
+  const [resetMethod, setResetMethod] = useState('email'); // 'email', 'temp', 'force'
   
   // Generated credentials preview
   const [generatedCreds, setGeneratedCreds] = useState(null);
@@ -80,9 +114,7 @@ const AdminPasswordManagement = () => {
     setLoading(true);
     const token = localStorage.getItem('accessToken');
     try {
-      const res = await axios.get('/api/admin/users', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.get('/api/admin/users', getAuthHeaders(token));
       setUsers(res.data);
     } catch (err) {
       console.error(err);
@@ -94,9 +126,7 @@ const AdminPasswordManagement = () => {
   const fetchCustomRoles = async () => {
     const token = localStorage.getItem('accessToken');
     try {
-      const res = await axios.get('/api/admin/roles', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.get('/api/admin/roles', getAuthHeaders(token));
       setCustomRoles(res.data || []);
     } catch (err) {
       console.error(err);
@@ -108,27 +138,59 @@ const AdminPasswordManagement = () => {
     fetchCustomRoles();
   }, []);
 
-  const handleForceReset = async (id, email) => {
-    const confirm = window.confirm(`Force password reset and email recovery link to ${email}?`);
-    if (!confirm) return;
+  // URL Query Parameters Router listener
+  useEffect(() => {
+    if (users.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    const id = params.get('id');
+
+    if (action === 'create') {
+      setOpenCreateUser(true);
+    } else if (id) {
+      const user = users.find(u => u._id === id);
+      if (user) {
+        handleOpenEditUser(user);
+      }
+    }
+  }, [users, window.location.search]);
+
+  const handleOpenReset = (user) => {
+    setSelectedUser(user);
+    setTempPassword('');
+    setForceResetToggle(user.forcePasswordReset || false);
+    setResetMethod('email');
+    setOpenResetDialog(true);
+  };
+
+  // Submit Password Action (temp password, link, force reset toggle)
+  const handleExecutePasswordReset = async () => {
     const token = localStorage.getItem('accessToken');
     try {
-      const res = await axios.post(`/api/admin/users/${id}/reset`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      alert(res.data.message || 'Password reset link sent successfully.');
+      let payload = {};
+      if (resetMethod === 'temp') {
+        if (!tempPassword.trim()) {
+          alert('Temporary password is required.');
+          return;
+        }
+        payload.temporaryPassword = tempPassword;
+      } else if (resetMethod === 'force') {
+        payload.forcePasswordReset = forceResetToggle;
+      }
+
+      const res = await axios.post(`/api/admin/users/${selectedUser._id}/reset`, payload, getAuthHeaders(token));
+      alert(res.data.message || 'Password security settings updated.');
+      setOpenResetDialog(false);
       fetchUsers();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to force reset.');
+      alert(err.response?.data?.message || 'Failed to update password reset options.');
     }
   };
 
   const handleUnlock = async (id, email) => {
     const token = localStorage.getItem('accessToken');
     try {
-      const res = await axios.post(`/api/admin/users/${id}/unlock`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.post(`/api/admin/users/${id}/unlock`, {}, getAuthHeaders(token));
       alert(res.data.message || 'Account unlocked.');
       fetchUsers();
     } catch (err) {
@@ -143,9 +205,7 @@ const AdminPasswordManagement = () => {
     
     const token = localStorage.getItem('accessToken');
     try {
-      await axios.post(`/api/admin/users/${id}/status`, { status: nextStatus }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.post(`/api/admin/users/${id}/status`, { status: nextStatus }, getAuthHeaders(token));
       alert('User status updated.');
       fetchUsers();
     } catch (err) {
@@ -160,9 +220,7 @@ const AdminPasswordManagement = () => {
     
     const token = localStorage.getItem('accessToken');
     try {
-      const res = await axios.get(`/api/admin/users/${user._id}/logs`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.get(`/api/admin/users/${user._id}/logs`, getAuthHeaders(token));
       setUserLogs(res.data);
     } catch (err) {
       console.error(err);
@@ -170,37 +228,94 @@ const AdminPasswordManagement = () => {
     }
   };
 
-  // Create User handler
+  // Create User
   const handleCreateUser = async () => {
-    const token = localStorage.getItem('accessToken');
-    
-    // Auto-generate employee ID, username and temporary password
     const randId = Math.floor(1000 + Math.random() * 9000);
-    const empId = `OJ-2026-${randId}`;
+    const empId = newEmployeeId || `OJ-2026-${randId}`;
     const generatedUsername = `${newFirstName.toLowerCase()}.${newLastName.toLowerCase()}`;
-    const tempPassword = `Temp${randId}!123`;
+    const generatedTempPassword = `Temp${randId}!123`;
 
     try {
       await axios.post('/api/auth/register', {
         email: newEmail,
-        password: tempPassword,
+        password: generatedTempPassword,
         role: newRole,
         firstName: newFirstName,
         lastName: newLastName,
-        department: newDept
+        department: newDept,
+        phone: newPhone,
+        employeeId: empId
       });
 
       setGeneratedCreds({
         email: newEmail,
         username: generatedUsername,
         employeeId: empId,
-        temporaryPassword: tempPassword
+        temporaryPassword: generatedTempPassword
       });
 
       setOpenCreateUser(false);
       fetchUsers();
+      // Clear inputs
+      setNewEmail('');
+      setNewFirstName('');
+      setNewLastName('');
+      setNewPhone('');
+      setNewEmployeeId('');
     } catch (err) {
       alert(err.response?.data?.message || 'Error compiling employee credentials.');
+    }
+  };
+
+  // Open Edit User Dialog
+  const handleOpenEditUser = (user) => {
+    setSelectedUser(user);
+    setEditEmail(user.email || '');
+    setEditRole(user.role || 'Employee');
+    setEditStatus(user.status || 'Enabled');
+    setEditFirstName(user.employeeDetails?.firstName || '');
+    setEditLastName(user.employeeDetails?.lastName || '');
+    setEditPhone(user.employeeDetails?.phone || '');
+    setEditDept(user.employeeDetails?.department || 'Operations');
+    setEditEmployeeId(user.employeeDetails?.employeeId || '');
+    setOpenEditUser(true);
+  };
+
+  // Save Edit User
+  const handleSaveEditUser = async () => {
+    const token = localStorage.getItem('accessToken');
+    try {
+      await axios.put(`/api/admin/users/${selectedUser._id}`, {
+        email: editEmail,
+        role: editRole,
+        status: editStatus,
+        firstName: editFirstName,
+        lastName: editLastName,
+        phone: editPhone,
+        department: editDept,
+        employeeId: editEmployeeId
+      }, getAuthHeaders(token));
+
+      setOpenEditUser(false);
+      fetchUsers();
+      alert('User details updated successfully.');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update user.');
+    }
+  };
+
+  // Delete User
+  const handleDeleteUser = async (id, email) => {
+    const confirm = window.confirm(`Permanently delete the user account for ${email}? This cannot be undone.`);
+    if (!confirm) return;
+    const token = localStorage.getItem('accessToken');
+    try {
+      await axios.delete(`/api/admin/users/${id}`, getAuthHeaders(token));
+      setOpenEditUser(false);
+      fetchUsers();
+      alert('User deleted.');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete user.');
     }
   };
 
@@ -219,9 +334,7 @@ const AdminPasswordManagement = () => {
         name: roleName,
         description: roleDesc,
         permissions: rolePermissions
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      }, getAuthHeaders(token));
       setOpenCreateRole(false);
       setRoleName('');
       setRoleDesc('');
@@ -236,23 +349,18 @@ const AdminPasswordManagement = () => {
     if (!window.confirm('Are you sure you want to delete this custom role?')) return;
     const token = localStorage.getItem('accessToken');
     try {
-      await axios.delete(`/api/admin/roles/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.delete(`/api/admin/roles/${id}`, getAuthHeaders(token));
       fetchCustomRoles();
     } catch (err) {
       alert(err.response?.data?.message || 'Error deleting role.');
     }
   };
 
-  // Toggle user MFA Status
   const handleToggleMfa = async (user) => {
     const token = localStorage.getItem('accessToken');
     try {
       if (!user.mfaEnabled) {
-        const res = await axios.post('/api/auth/mfa/enable', {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await axios.post('/api/auth/mfa/enable', {}, getAuthHeaders(token));
         setMfaSecret(res.data.secret || 'MOCKED_MFA_SECRET_123456');
         setOpenMfaQr(true);
       } else {
@@ -266,11 +374,15 @@ const AdminPasswordManagement = () => {
 
   // Enterprise Table Columns
   const columns = [
-    { id: 'email', label: 'User Email', sortable: true, render: (row) => (
+    { id: 'employeeId', label: 'Employee ID', sortable: true, render: (row) => row.employeeDetails?.employeeId || 'N/A' },
+    { id: 'employeeName', label: 'Employee Name', sortable: true, render: (row) => row.employeeDetails ? `${row.employeeDetails.firstName} ${row.employeeDetails.lastName}` : 'N/A' },
+    { id: 'username', label: 'Username', sortable: true, render: (row) => row.employeeDetails?.username || 'N/A' },
+    { id: 'email', label: 'Email', sortable: true, render: (row) => (
         <Typography variant="body2" sx={{ fontWeight: 700, color: '#845EC2' }}>{row.email}</Typography>
       )
     },
     { id: 'role', label: 'Role', sortable: true, filterType: 'select', filterOptions: ['Super Admin', 'Admin', 'Manager', 'Team Lead', 'Sales', 'BCO', 'Client Service', 'HR', 'Employee'] },
+    { id: 'department', label: 'Department', sortable: true, render: (row) => row.employeeDetails?.department || 'Operations' },
     { id: 'status', label: 'Status', sortable: true, render: (row) => (
         <Chip 
           label={row.status || 'Enabled'} 
@@ -280,30 +392,10 @@ const AdminPasswordManagement = () => {
         />
       )
     },
-    { id: 'mfaEnabled', label: 'MFA Status', sortable: true, render: (row) => (
-        <Button 
-          size="small" 
-          variant="outlined" 
-          color={row.mfaEnabled ? 'success' : 'default'}
-          sx={{ height: '20px', fontSize: '10px', px: 1 }}
-          onClick={() => handleToggleMfa(row)}
-        >
-          {row.mfaEnabled ? 'MFA Active' : 'Enable MFA'}
-        </Button>
-      )
-    },
-    { id: 'isLocked', label: 'Lock Status', sortable: true, render: (row) => (
-        <Chip 
-          label={row.isLocked ? 'Locked' : 'Unlocked'} 
-          size="small" 
-          color={row.isLocked ? 'warning' : 'default'} 
-          sx={{ borderRadius: '4px', height: '20px', fontSize: '11px' }} 
-        />
-      )
-    },
-    { id: 'loginAttempts', label: 'Failed Logins', sortable: true, render: (row) => `${row.loginAttempts || 0}/5` },
+    { id: 'lastLogin', label: 'Last Login', sortable: true, render: (row) => row.lastLogin ? new Date(row.lastLogin).toLocaleString() : 'Never' },
+    { id: 'passwordLastChanged', label: 'Password Changed', sortable: true, render: (row) => row.passwordLastChanged ? new Date(row.passwordLastChanged).toLocaleDateString() : 'N/A' },
     { id: 'actions', label: 'Administrative Controls', sortable: false, render: (row) => (
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
           <Button 
             size="small" 
             variant="outlined" 
@@ -315,20 +407,20 @@ const AdminPasswordManagement = () => {
           <Button 
             size="small" 
             variant="outlined" 
-            color={row.status === 'Disabled' ? 'success' : 'error'}
+            color="primary"
             sx={{ height: 24, fontSize: '10px', px: 1 }} 
-            onClick={() => handleToggleStatus(row._id, row.status || 'Enabled', row.email)}
+            onClick={() => handleOpenEditUser(row)}
           >
-            {row.status === 'Disabled' ? 'Enable' : 'Disable'}
+            Edit
           </Button>
           <Button 
             size="small" 
             variant="outlined" 
             color="primary"
             sx={{ height: 24, fontSize: '10px', px: 1 }} 
-            onClick={() => handleForceReset(row._id, row.email)}
+            onClick={() => handleOpenReset(row)}
           >
-            Force Reset
+            Reset Pwd
           </Button>
           {row.isLocked && (
             <Button 
@@ -355,7 +447,7 @@ const AdminPasswordManagement = () => {
             ENTERPRISE USER MANAGEMENT & SECURITY CONTROL
           </Typography>
           <Typography variant="caption" sx={{ color: '#64748B' }}>
-            Lockout monitor, dynamic staff logins creation, security pairing tokens, and custom role permissions
+            Enforce role policies, lockouts, disable status, password resets, and audit historical security logs.
           </Typography>
         </Box>
         <Tabs value={tabIndex} onChange={(e, val) => setTabIndex(val)}>
@@ -411,7 +503,7 @@ const AdminPasswordManagement = () => {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#845EC2' }}>
-               динамических Custom Roles & Permissions list
+              Custom Roles & Permissions List
             </Typography>
             <Button 
               variant="contained" 
@@ -467,26 +559,59 @@ const AdminPasswordManagement = () => {
         </Box>
       )}
 
+      {/* RESET PASSWORD / OPTIONS OVERLAY DIALOG */}
+      <Dialog open={openResetDialog} onClose={() => setOpenResetDialog(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ backgroundColor: '#845EC2', color: '#FFFFFF', fontWeight: 'bold', fontSize: '16px' }}>
+          Reset Password Options: {selectedUser?.email}
+        </DialogTitle>
+        <DialogContent sx={{ p: 2, mt: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Reset Method</InputLabel>
+            <Select value={resetMethod} label="Reset Method" onChange={(e) => setResetMethod(e.target.value)}>
+              <MenuItem value="email">Send Recovery Link Email</MenuItem>
+              <MenuItem value="temp">Generate Temporary Password</MenuItem>
+              <MenuItem value="force">Toggle Force Change on Next Login</MenuItem>
+            </Select>
+          </FormControl>
+
+          {resetMethod === 'temp' && (
+            <TextField 
+              label="Temporary Password" 
+              size="small" 
+              fullWidth 
+              placeholder="e.g. TempPass@12345"
+              value={tempPassword} 
+              onChange={(e) => setTempPassword(e.target.value)} 
+            />
+          )}
+
+          {resetMethod === 'force' && (
+            <FormControlLabel
+              control={
+                <Checkbox 
+                  checked={forceResetToggle} 
+                  onChange={(e) => setForceResetToggle(e.target.checked)} 
+                />
+              }
+              label="Force Reset Password on Next Sign In"
+            />
+          )}
+        </DialogContent>
+        <Divider />
+        <DialogActions sx={{ px: 2, pb: 2, pt: 1.5 }}>
+          <Button size="small" variant="outlined" onClick={() => setOpenResetDialog(false)}>Cancel</Button>
+          <Button size="small" variant="contained" onClick={handleExecutePasswordReset}>Execute Reset</Button>
+        </DialogActions>
+      </Dialog>
+
       {/* CREATE CUSTOM ROLE DIALOG */}
       <Dialog open={openCreateRole} onClose={() => setOpenCreateRole(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ backgroundColor: '#845EC2', color: '#FFFFFF', fontWeight: 'bold' }}>
           Add Custom System Role
         </DialogTitle>
         <DialogContent sx={{ p: 2, mt: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField
-            label="Role Name"
-            size="small"
-            fullWidth
-            value={roleName}
-            onChange={(e) => setRoleName(e.target.value)}
-          />
-          <TextField
-            label="Short Description"
-            size="small"
-            fullWidth
-            value={roleDesc}
-            onChange={(e) => setRoleDesc(e.target.value)}
-          />
+          <TextField label="Role Name" size="small" fullWidth value={roleName} onChange={(e) => setRoleName(e.target.value)} />
+          <TextField label="Short Description" size="small" fullWidth value={roleDesc} onChange={(e) => setRoleDesc(e.target.value)} />
           <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#845EC2' }}>Assign Scopes</Typography>
           <Box sx={{ border: '1px solid #845EC2', borderRadius: '4px', p: 1, maxHeight: 150, overflowY: 'auto' }}>
             <FormGroup>
@@ -494,11 +619,7 @@ const AdminPasswordManagement = () => {
                 <FormControlLabel
                   key={p.key}
                   control={
-                    <Checkbox 
-                      size="small" 
-                      checked={rolePermissions.includes(p.key)} 
-                      onChange={() => handleTogglePermission(p.key)} 
-                    />
+                    <Checkbox size="small" checked={rolePermissions.includes(p.key)} onChange={() => handleTogglePermission(p.key)} />
                   }
                   label={<Typography sx={{ fontSize: '12px' }}>{p.key} ({p.label})</Typography>}
                 />
@@ -518,27 +639,11 @@ const AdminPasswordManagement = () => {
           Create Employee Account
         </DialogTitle>
         <DialogContent sx={{ p: 2, mt: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField
-            label="First Name"
-            size="small"
-            fullWidth
-            value={newFirstName}
-            onChange={(e) => setNewFirstName(e.target.value)}
-          />
-          <TextField
-            label="Last Name"
-            size="small"
-            fullWidth
-            value={newLastName}
-            onChange={(e) => setNewLastName(e.target.value)}
-          />
-          <TextField
-            label="Corporate Email"
-            size="small"
-            fullWidth
-            value={newEmail}
-            onChange={(e) => setNewEmail(e.target.value)}
-          />
+          <TextField label="Employee ID (Optional)" placeholder="e.g. OJ-2026-1122" size="small" fullWidth value={newEmployeeId} onChange={(e) => setNewEmployeeId(e.target.value)} />
+          <TextField label="First Name" size="small" fullWidth value={newFirstName} onChange={(e) => setNewFirstName(e.target.value)} />
+          <TextField label="Last Name" size="small" fullWidth value={newLastName} onChange={(e) => setNewLastName(e.target.value)} />
+          <TextField label="Corporate Email" size="small" fullWidth value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+          <TextField label="Phone Number" size="small" fullWidth value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
           <FormControl fullWidth size="small">
             <InputLabel>Role</InputLabel>
             <Select value={newRole} label="Role" onChange={(e) => setNewRole(e.target.value)}>
@@ -562,6 +667,52 @@ const AdminPasswordManagement = () => {
         </DialogActions>
       </Dialog>
 
+      {/* EDIT EMPLOYEE USER DIALOG */}
+      <Dialog open={openEditUser} onClose={() => setOpenEditUser(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ backgroundColor: '#845EC2', color: '#FFFFFF', fontWeight: 'bold' }}>
+          Edit Employee Account Details
+        </DialogTitle>
+        <DialogContent sx={{ p: 2, mt: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField label="Employee ID" size="small" fullWidth value={editEmployeeId} onChange={(e) => setEditEmployeeId(e.target.value)} />
+          <TextField label="First Name" size="small" fullWidth value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} />
+          <TextField label="Last Name" size="small" fullWidth value={editLastName} onChange={(e) => setEditLastName(e.target.value)} />
+          <TextField label="Email" size="small" fullWidth value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+          <TextField label="Phone Number" size="small" fullWidth value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+          <FormControl fullWidth size="small">
+            <InputLabel>Role</InputLabel>
+            <Select value={editRole} label="Role" onChange={(e) => setEditRole(e.target.value)}>
+              {['Super Admin', 'Admin', 'Manager', 'Team Lead', 'Sales', 'BCO', 'Client Service', 'HR', 'Employee'].map(r => (
+                <MenuItem key={r} value={r}>{r}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth size="small">
+            <InputLabel>Department</InputLabel>
+            <Select value={editDept} label="Department" onChange={(e) => setEditDept(e.target.value)}>
+              {['Administration', 'Sales', 'BCO Operations', 'Client Service', 'HR', 'Operations', 'Field Staff'].map(d => (
+                <MenuItem key={d} value={d}>{d}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth size="small">
+            <InputLabel>Status</InputLabel>
+            <Select value={editStatus} label="Status" onChange={(e) => setEditStatus(e.target.value)}>
+              <MenuItem value="Enabled">Enabled</MenuItem>
+              <MenuItem value="Disabled">Disabled</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions sx={{ px: 2, pb: 2, display: 'flex', justifyContent: 'space-between' }}>
+          <Button size="small" variant="contained" color="error" startIcon={<DeleteIcon />} onClick={() => handleDeleteUser(selectedUser._id, selectedUser.email)}>
+            Delete User
+          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button size="small" variant="outlined" onClick={() => setOpenEditUser(false)}>Cancel</Button>
+            <Button size="small" variant="contained" onClick={handleSaveEditUser}>Save Changes</Button>
+          </Box>
+        </DialogActions>
+      </Dialog>
+
       {/* MFA QR PAIRING DIALOG */}
       <Dialog open={openMfaQr} onClose={() => setOpenMfaQr(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ backgroundColor: '#845EC2', color: '#FFFFFF', fontWeight: 'bold' }}>
@@ -571,12 +722,9 @@ const AdminPasswordManagement = () => {
           <Typography variant="body2" sx={{ mb: 2 }}>
             Scan the QR code below inside Google Authenticator or Microsoft Authenticator to configure 2FA.
           </Typography>
-          
           <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-            {/* Draw visual mockup QR icon representing OTP generation */}
             <QrCodeIcon sx={{ fontSize: 160, color: '#845EC2' }} />
           </Box>
-
           <Typography variant="caption" display="block" sx={{ mt: 1, color: '#64748B' }}>
             Pairing Secret Key: <strong>{mfaSecret}</strong>
           </Typography>

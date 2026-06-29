@@ -46,6 +46,7 @@ const Navbar = () => {
   const [quickActionEl, setQuickActionEl] = useState(null);
   const [profileEl, setProfileEl] = useState(null);
   const [docAnchorEl, setDocAnchorEl] = useState(null);
+  const [modulesAnchorEl, setModulesAnchorEl] = useState(null);
 
   // Global Search states
   const [searchQuery, setSearchQuery] = useState('');
@@ -297,6 +298,46 @@ const Navbar = () => {
             <MenuItem onClick={() => { setDocAnchorEl(null); navigate('/documentation?tab=troubleshooting'); }} sx={{ fontSize: '0.85rem' }}>Troubleshooting</MenuItem>
             <MenuItem onClick={() => { setDocAnchorEl(null); navigate('/documentation?tab=release'); }} sx={{ fontSize: '0.85rem' }}>Release Notes</MenuItem>
             <MenuItem onClick={() => { setDocAnchorEl(null); navigate('/documentation?tab=dashboard'); }} sx={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#845EC2' }}>PDF Export</MenuItem>
+          </Menu>
+
+          {/* Modules Menu Dropdown */}
+          <Button
+            size="small"
+            variant="contained"
+            onClick={(e) => setModulesAnchorEl(e.currentTarget)}
+            startIcon={<MenuIcon fontSize="small" />}
+            endIcon={<ArrowDropDownIcon fontSize="small" />}
+            sx={{ 
+              height: 32, 
+              borderRadius: '4px', 
+              backgroundColor: '#845EC2', // Primary Violet accent button
+              color: '#FFFFFF', 
+              '&:hover': { backgroundColor: '#6e4db3' } 
+            }}
+          >
+            Modules Menu
+          </Button>
+          <Menu
+            anchorEl={modulesAnchorEl}
+            open={Boolean(modulesAnchorEl)}
+            onClose={() => setModulesAnchorEl(null)}
+            PaperProps={{ sx: { width: 220, mt: 0.5, border: '1px solid #845EC2', backgroundColor: '#FEFEDF' } }}
+          >
+            <MenuItem onClick={() => { setModulesAnchorEl(null); navigate('/'); }} sx={{ fontSize: '0.85rem' }}>Dashboard</MenuItem>
+            <MenuItem onClick={() => { setModulesAnchorEl(null); navigate('/analytics'); }} sx={{ fontSize: '0.85rem' }}>Analytics</MenuItem>
+            <MenuItem onClick={() => { setModulesAnchorEl(null); navigate('/crm'); }} sx={{ fontSize: '0.85rem' }}>CRM</MenuItem>
+            <MenuItem onClick={() => { setModulesAnchorEl(null); navigate('/tickets'); }} sx={{ fontSize: '0.85rem' }}>Tickets</MenuItem>
+            <MenuItem onClick={() => { setModulesAnchorEl(null); navigate('/hr'); }} sx={{ fontSize: '0.85rem' }}>HR</MenuItem>
+            <MenuItem onClick={() => { setModulesAnchorEl(null); navigate('/workflows'); }} sx={{ fontSize: '0.85rem' }}>Workflow Builder</MenuItem>
+            <MenuItem onClick={() => { setModulesAnchorEl(null); navigate('/workflow/agents'); }} sx={{ fontSize: '0.85rem' }}>AI Agents</MenuItem>
+            <MenuItem onClick={() => { setModulesAnchorEl(null); navigate('/reports'); }} sx={{ fontSize: '0.85rem' }}>Reports</MenuItem>
+            <MenuItem onClick={() => { setModulesAnchorEl(null); navigate('/integrations'); }} sx={{ fontSize: '0.85rem' }}>Integrations</MenuItem>
+            <MenuItem onClick={() => { setModulesAnchorEl(null); navigate('/monitoring'); }} sx={{ fontSize: '0.85rem' }}>Monitoring</MenuItem>
+            <MenuItem onClick={() => { setModulesAnchorEl(null); navigate('/documentation'); }} sx={{ fontSize: '0.85rem' }}>Documentation</MenuItem>
+            <MenuItem onClick={() => { setModulesAnchorEl(null); navigate('/meetings'); }} sx={{ fontSize: '0.85rem' }}>Meetings</MenuItem>
+            <MenuItem onClick={() => { setModulesAnchorEl(null); navigate('/admin-password-management'); }} sx={{ fontSize: '0.85rem' }}>Password Management</MenuItem>
+            <MenuItem onClick={() => { setModulesAnchorEl(null); navigate('/settings'); }} sx={{ fontSize: '0.85rem' }}>Settings</MenuItem>
+            <MenuItem onClick={() => { setModulesAnchorEl(null); navigate('/profile'); }} sx={{ fontSize: '0.85rem' }}>Profile</MenuItem>
           </Menu>
 
           {/* Notifications Icon and list */}

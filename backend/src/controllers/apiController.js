@@ -18,6 +18,7 @@ import AuditLog from '../models/AuditLog.js';
 import BcoProject from '../models/BcoProject.js';
 import JobPosting from '../models/JobPosting.js';
 import CustomRole from '../models/CustomRole.js';
+import MeetingLabel from '../models/MeetingLabel.js';
 import VoiceTranscript from '../models/VoiceTranscript.js';
 
 // Integration services & recovery libs
@@ -173,6 +174,7 @@ export const loginUser = async (req, res) => {
     const ipAddress = req.ip || req.connection.remoteAddress;
     user.sessions.push({ token: accessToken, deviceInfo: deviceInfo || 'Web Browser', ipAddress });
     user.refreshTokens.push(refreshToken);
+    user.lastLogin = new Date();
     await user.save();
 
     const log = new AuditLog({ 
@@ -191,7 +193,8 @@ export const loginUser = async (req, res) => {
       role: user.role,
       email: user.email,
       mfaRequired: user.mfaEnabled,
-      userId: user._id
+      userId: user._id,
+      forcePasswordReset: user.forcePasswordReset
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -365,6 +368,50 @@ export const scheduleMeeting = async (req, res) => {
     meeting.aiSummary = `Scheduled team synchronization meeting. Host: ${req.user.email}. Google Meet link generated.`;
     await meeting.save();
     res.status(201).json(meeting);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getMeetingLabels = async (req, res) => {
+  try {
+    const list = await MeetingLabel.find();
+    res.status(200).json(list);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const createMeetingLabel = async (req, res) => {
+  try {
+    const label = new MeetingLabel(req.body);
+    await label.save();
+    res.status(201).json(label);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateMeetingLabel = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const label = await MeetingLabel.findById(id);
+    if (!label) return res.status(404).json({ message: 'Label not found' });
+    Object.assign(label, req.body);
+    await label.save();
+    res.status(200).json(label);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteMeetingLabel = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const label = await MeetingLabel.findById(id);
+    if (!label) return res.status(404).json({ message: 'Label not found' });
+    await label.deleteOne();
+    res.status(200).json({ message: 'Label deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -843,6 +890,8 @@ export const resetPassword = async (req, res) => {
     user.resetToken = null;
     user.resetTokenExpiry = null;
     user.lastPasswordReset = Date.now();
+    user.passwordLastChanged = new Date();
+    user.forcePasswordReset = false;
     user.loginAttempts = 0;
     user.isLocked = false;
     user.lockUntil = null;
@@ -914,6 +963,8 @@ export const changePassword = async (req, res) => {
     // Set new password
     user.password = newPassword;
     user.lastPasswordReset = Date.now();
+    user.passwordLastChanged = new Date();
+    user.forcePasswordReset = false;
 
     // Invalidate OTHER sessions (keep current session active, clear others)
     const activeToken = req.token;
@@ -940,8 +991,26 @@ export const changePassword = async (req, res) => {
 // Admin endpoint: List all users
 export const getAdminUsers = async (req, res) => {
   try {
-    const users = await User.find({}, '-password -mfaSecret');
-    res.status(200).json(users);
+    const users = await User.find({}, '-password -mfaSecret').lean();
+    
+    // Fetch associated employee profiles and attach them
+    const populatedUsers = await Promise.all(users.map(async (user) => {
+      const employee = await Employee.findOne({ user: user._id });
+      return {
+        ...user,
+        employeeDetails: employee ? {
+          employeeId: employee.employeeId || `OJ-2026-${String(employee._id).substring(18)}`,
+          firstName: employee.firstName,
+          lastName: employee.lastName,
+          username: `${employee.firstName.toLowerCase()}.${employee.lastName.toLowerCase()}`,
+          phone: employee.phoneNumber || 'N/A',
+          department: employee.department || 'Operations',
+          designation: employee.status || 'Active'
+        } : null
+      };
+    }));
+
+    res.status(200).json(populatedUsers);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -950,41 +1019,48 @@ export const getAdminUsers = async (req, res) => {
 // Admin endpoint: Force Password Reset for a user
 export const adminForcePasswordReset = async (req, res) => {
   const { id } = req.params;
+  const { forcePasswordReset, temporaryPassword } = req.body;
   try {
     const user = await User.findById(id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Generate secure token
-    const token = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    let responseMessage = '';
+    let resetLink = '';
 
-    // Save token and expiry
-    user.resetToken = hashedToken;
-    user.resetTokenExpiry = Date.now() + 30 * 60 * 1000;
-    await user.save();
-
-    const host = req.get('host');
-    const baseUrl = host.includes('localhost:5000') ? 'http://localhost:3000' : `${req.protocol}://${host}`;
-    const resetLink = `${baseUrl}/reset-password/${token}`;
-
-    // Send email
-    await sendResetPasswordEmail({
-      to: user.email,
-      userName: user.email.split('@')[0],
-      resetLink
-    });
+    if (temporaryPassword) {
+      user.password = temporaryPassword; // userSchema.pre('save') hashes it!
+      user.forcePasswordReset = true; // Automatically force change password on login if temp password set!
+      await user.save();
+      responseMessage = `Temporary password set for ${user.email}. Forced reset on next login enabled.`;
+    } else if (forcePasswordReset !== undefined) {
+      user.forcePasswordReset = forcePasswordReset;
+      await user.save();
+      responseMessage = `Forced password reset on next login status set to ${forcePasswordReset} for ${user.email}.`;
+    } else {
+      // Default behavior: Generate secure link token and send reset email
+      const token = crypto.randomBytes(32).toString('hex');
+      const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+      user.resetToken = hashedToken;
+      user.resetTokenExpiry = Date.now() + 30 * 60 * 1000;
+      await user.save();
+      const host = req.get('host');
+      const baseUrl = host.includes('localhost:5000') ? 'http://localhost:3000' : `${req.protocol}://${host}`;
+      resetLink = `${baseUrl}/reset-password/${token}`;
+      await sendResetPasswordEmail({ to: user.email, userName: user.email.split('@')[0], resetLink });
+      responseMessage = `Password reset email forced and sent to ${user.email}.`;
+    }
 
     const audit = new AuditLog({
       user: req.user._id, // admin who performed the reset
       action: 'ADMIN_RESET_ACTIONS',
       module: 'Administration',
-      details: `Forced password reset for user: ${user.email}`,
+      details: `Forced password reset actions executed for user: ${user.email}. Actions: TempPwd=${!!temporaryPassword}, ForceReset=${forcePasswordReset}`,
       ipAddress: req.ip || req.connection.remoteAddress,
       userAgent: req.headers['user-agent']
     });
     await audit.save();
 
-    res.status(200).json({ message: `Password reset email forced and sent to ${user.email}.`, resetLink });
+    res.status(200).json({ message: responseMessage, resetLink });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -1049,6 +1125,72 @@ export const adminToggleUserStatus = async (req, res) => {
     await audit.save();
 
     res.status(200).json({ message: `User status set to ${status} successfully.` });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const adminUpdateUser = async (req, res) => {
+  const { id } = req.params;
+  const { email, role, status, firstName, lastName, phone, department, employeeId } = req.body;
+  try {
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (email) user.email = email;
+    if (role) user.role = role;
+    if (status) user.status = status;
+    await user.save();
+
+    const employee = await Employee.findOne({ user: user._id });
+    if (employee) {
+      if (firstName !== undefined) employee.firstName = firstName;
+      if (lastName !== undefined) employee.lastName = lastName;
+      if (phone !== undefined) employee.phoneNumber = phone;
+      if (department !== undefined) employee.department = department;
+      if (employeeId !== undefined) employee.employeeId = employeeId;
+      await employee.save();
+    }
+
+    const audit = new AuditLog({
+      user: req.user._id,
+      action: 'ADMIN_RESET_ACTIONS',
+      module: 'Administration',
+      details: `Updated account details for user: ${user.email}`,
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.headers['user-agent']
+    });
+    await audit.save();
+
+    res.status(200).json({ message: 'User and employee profile updated successfully.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const adminDeleteUser = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Delete associated employee
+    await Employee.deleteOne({ user: user._id });
+
+    // Delete user
+    await user.deleteOne();
+
+    const audit = new AuditLog({
+      user: req.user._id,
+      action: 'ADMIN_RESET_ACTIONS',
+      module: 'Administration',
+      details: `Deleted account for user: ${user.email}`,
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.headers['user-agent']
+    });
+    await audit.save();
+
+    res.status(200).json({ message: 'User deleted successfully.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -1239,4 +1381,3 @@ export const deleteCustomRole = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-

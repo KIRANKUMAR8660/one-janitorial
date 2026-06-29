@@ -47,6 +47,8 @@ import {
   adminUnlockUser,
   adminToggleUserStatus,
   adminGetUserLogs,
+  adminUpdateUser,
+  adminDeleteUser,
 
   // New CRUD, Voice & Roles
   updateMeeting,
@@ -55,7 +57,11 @@ import {
   searchVoiceTranscripts,
   getCustomRoles,
   createCustomRole,
-  deleteCustomRole
+  deleteCustomRole,
+  getMeetingLabels,
+  createMeetingLabel,
+  updateMeetingLabel,
+  deleteMeetingLabel
 } from '../controllers/apiController.js';
 import {
   getCustomAPIs,
@@ -130,6 +136,13 @@ router.get('/channels/:channelId/messages', protect, getMessages);
 // 5. Meetings
 router.get('/meetings', protect, getMeetings);
 router.post('/meetings', protect, scheduleMeeting);
+router.put('/meetings/:id', protect, updateMeeting);
+router.delete('/meetings/:id', protect, deleteMeeting);
+
+router.get('/meeting-labels', protect, getMeetingLabels);
+router.post('/meeting-labels', protect, createMeetingLabel);
+router.put('/meeting-labels/:id', protect, updateMeetingLabel);
+router.delete('/meeting-labels/:id', protect, deleteMeetingLabel);
 
 // 6. CRM Automation
 router.get('/crm/deals', protect, authorize('Super Admin', 'Admin', 'Sales', 'Manager'), getDeals);
@@ -183,6 +196,8 @@ router.post('/admin/users/:id/reset', protect, authorize('Super Admin', 'Admin')
 router.post('/admin/users/:id/unlock', protect, authorize('Super Admin', 'Admin'), adminUnlockUser);
 router.post('/admin/users/:id/status', protect, authorize('Super Admin', 'Admin'), adminToggleUserStatus);
 router.get('/admin/users/:id/logs', protect, authorize('Super Admin', 'Admin'), adminGetUserLogs);
+router.put('/admin/users/:id', protect, authorize('Super Admin', 'Admin'), adminUpdateUser);
+router.delete('/admin/users/:id', protect, authorize('Super Admin', 'Admin'), adminDeleteUser);
 
 // 16. Workflow Automation Platform
 router.post('/workflows', protect, createWorkflow);
@@ -202,9 +217,7 @@ router.post('/workflows/upload', protect, upload.single('file'), uploadWorkflowF
 router.post('/chat/upload-voice', protect, upload.single('voice'), uploadVoiceMessage);
 router.get('/chat/transcripts', protect, searchVoiceTranscripts);
 
-// 18. Additional Meeting CRUD Controls
-router.put('/meetings/:id', protect, updateMeeting);
-router.delete('/meetings/:id', protect, deleteMeeting);
+// 18. Additional Meeting CRUD Controls (Deprecated duplicates - handled in Section 5)
 
 // 19. Custom API Generator & Builder
 router.get('/custom-apis', protect, authorize('Super Admin', 'Admin'), getCustomAPIs);
@@ -218,6 +231,7 @@ router.all('/custom-run/:version/:path(*)', handleCustomAPIExecution);
 router.get('/admin/roles', protect, authorize('Super Admin', 'Admin'), getCustomRoles);
 router.post('/admin/roles', protect, authorize('Super Admin', 'Admin'), createCustomRole);
 router.delete('/admin/roles/:id', protect, authorize('Super Admin', 'Admin'), deleteCustomRole);
+
 
 // 21. Documentation Center
 router.get('/documentation/data', protect, getDocumentationData);

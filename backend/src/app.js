@@ -13,10 +13,23 @@ const app = express();
 app.use(helmet());
 
 // Cross Origin Resource Sharing
+// SOCKET_CORS_ORIGIN is set to the Vercel frontend URL in production (e.g. https://one-janitorial.vercel.app)
+// Falls back to '*' only if the env var is not set (useful for local dev)
+const allowedOrigins = process.env.SOCKET_CORS_ORIGIN
+  ? process.env.SOCKET_CORS_ORIGIN.split(',').map(o => o.trim())
+  : ['*'];
+
 app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin '${origin}' not allowed`));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 
 // Body parser
@@ -25,7 +38,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static assets (e.g. contracts, uploaded PDFs)
 app.use('/uploads', express.static('uploads'));
-app.use('/documentation-files', express.static('c:/Users/KIRAN KUMAR/Downloads/one__janitorial/documentation'));
+// Serve documentation files — uses relative path so it works on any host
+app.use('/documentation-files', express.static(new URL('../../documentation', import.meta.url).pathname));
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -4,14 +4,14 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://one-janitorial-api.onrender.com/api/:path*"
+      "destination": "https://one-janitorial-production.up.railway.app/api/:path*"
     },
     {
       "source": "/socket.io/:path*",
-      "destination": "https://one-janitorial-api.onrender.com/socket.io/:path*"
+      "destination": "https://one-janitorial-production.up.railway.app/socket.io/:path*"
     },
     {
-      "source": "/((?!assets/|static/|favicon.ico).*|.*\\.html)",
+      "source": "/((?!assets/|static/|favicon.ico).*|\\.html$)",
       "destination": "/index.html"
     }
   ],
