@@ -14,7 +14,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: MONGO_URI
-        sync: false
+        value: mongodb+srv://kiranhandattu4000_db_user:S5gnfEg9hcwJpfJZ@cluster0.wh23765.mongodb.net/one_janitorial
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
@@ -41,7 +41,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: MONGO_URI
-        sync: false
+        value: mongodb+srv://kiranhandattu4000_db_user:S5gnfEg9hcwJpfJZ@cluster0.wh23765.mongodb.net/one_janitorial
       - key: VAULT_ENCRYPTION_KEY
         sync: false
       - key: REDIS_URL
