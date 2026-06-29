@@ -23,6 +23,11 @@ services:
         sync: false
       - key: SOCKET_CORS_ORIGIN
         value: "*"
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: one-janitorial-redis
+          property: connectionString
 
   # BullMQ Task Queue Dedicated Worker (Optional scale offloader)
   - type: worker
@@ -39,3 +44,15 @@ services:
         sync: false
       - key: VAULT_ENCRYPTION_KEY
         sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: one-janitorial-redis
+          property: connectionString
+
+  # Private Redis instance for BullMQ task management
+  - type: redis
+    name: one-janitorial-redis
+    plan: starter
+    ipAllowList: [] # empty means only accessible internally via the private network
+
